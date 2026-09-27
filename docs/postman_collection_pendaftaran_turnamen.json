@@ -1,0 +1,1829 @@
+{
+  "info": {
+    "name": "Sistem Pendaftaran Turnamen Game API v1 - UTS Mini Project",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman Collection Pengujian API Sistem Pendaftaran Turnamen Game (E-Sport Tournament Hub). Memuat happy path dan negative path sesuai dokumen laporan UTS & rubrik pengujian (TC-01 s.d TC-12)."
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000/api/v1"
+    },
+    {
+      "key": "password_demo",
+      "value": "password"
+    },
+    {
+      "key": "token_admin",
+      "value": ""
+    },
+    {
+      "key": "token_kapten1",
+      "value": ""
+    },
+    {
+      "key": "token_kapten2",
+      "value": ""
+    },
+    {
+      "key": "user_admin",
+      "value": ""
+    },
+    {
+      "key": "user_kapten1",
+      "value": ""
+    },
+    {
+      "key": "user_kapten2",
+      "value": ""
+    },
+    {
+      "key": "game_id",
+      "value": ""
+    },
+    {
+      "key": "tournament_id",
+      "value": ""
+    },
+    {
+      "key": "registration_kapten1",
+      "value": ""
+    },
+    {
+      "key": "registration_kapten2",
+      "value": ""
+    },
+    {
+      "key": "team_kapten1",
+      "value": "Garuda Nusantara E-Sport"
+    },
+    {
+      "key": "team_kapten1_updated",
+      "value": "Garuda Nusantara Reborn"
+    },
+    {
+      "key": "team_kapten2",
+      "value": "Evos Academy Rising"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Login Kapten1 (Andi)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/auth/login",
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"kapten1@turnamen.test\", \"password\": \"{{password_demo}}\", \"device_name\": \"postman-uts\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const res = pm.response.json();",
+              "    pm.test(\"Token diterima\", () => pm.expect(res.access_token).to.be.a(\"string\"));",
+              "    pm.collectionVariables.set(\"token_kapten1\", res.access_token);",
+              "    pm.collectionVariables.set(\"user_kapten1\", res.user.id);",
+              "    const runSuffix = Date.now().toString().slice(-4);",
+              "    pm.collectionVariables.set(\"team_kapten1\", \"Garuda Nusantara \" + runSuffix);",
+              "    pm.collectionVariables.set(\"team_kapten1_updated\", \"Garuda Reborn \" + runSuffix);",
+              "    pm.collectionVariables.set(\"team_kapten2\", \"Evos Academy \" + runSuffix);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Login Kapten2 (Budi)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/auth/login",
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"kapten2@turnamen.test\", \"password\": \"{{password_demo}}\", \"device_name\": \"postman-uts\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const res = pm.response.json();",
+              "    pm.test(\"Token diterima\", () => pm.expect(res.access_token).to.be.a(\"string\"));",
+              "    pm.collectionVariables.set(\"token_kapten2\", res.access_token);",
+              "    pm.collectionVariables.set(\"user_kapten2\", res.user.id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Login Admin Panitia",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/auth/login",
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"admin@turnamen.test\", \"password\": \"{{password_demo}}\", \"device_name\": \"postman-uts\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const res = pm.response.json();",
+              "    pm.test(\"Token admin diterima\", () => pm.expect(res.access_token).to.be.a(\"string\"));",
+              "    pm.collectionVariables.set(\"token_admin\", res.access_token);",
+              "    pm.collectionVariables.set(\"user_admin\", res.user.id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Login Password Salah (TC-01 Negative)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/auth/login",
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\": \"kapten1@turnamen.test\", \"password\": \"PasswordSalah123!\", \"device_name\": \"postman-uts\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 401 Unauthorized\", () => pm.response.to.have.status(401));",
+              "pm.test(\"Pesan kredensial tidak valid\", () => {",
+              "    const res = pm.response.json();",
+              "    pm.expect(res.message).to.include(\"tidak valid\");",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Akses Endpoint Tanpa Token (TC-08 Negative)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/me",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 401 Unauthorized\", () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Daftar Master Game (Data Pendukung Domain)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/games",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const list = pm.response.json().data;",
+              "    pm.test(\"Data game e-sport tersedia\", () => pm.expect(list.length).to.be.above(0));",
+              "    const game = list.find(g => g.slug === \"mobile-legends\") || list[0];",
+              "    pm.test(\"Game terpilih valid\", () => pm.expect(game).to.exist);",
+              "    if (game) {",
+              "        pm.collectionVariables.set(\"game_id\", game.id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Daftar Katalog Turnamen (TC-02 Publik)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/tournaments?per_page=5&page=1",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const res = pm.response.json();",
+              "    pm.test(\"Pagination links tersedia\", () => pm.expect(res).to.have.property(\"links\"));",
+              "    pm.test(\"Pagination meta per_page\", () => pm.expect(res.meta.per_page).to.eql(5));",
+              "    const openTourney = res.data.find(t => t.status === \"open\") || res.data[0];",
+              "    pm.test(\"Turnamen open tersedia\", () => pm.expect(openTourney).to.exist);",
+              "    if (openTourney) {",
+              "        pm.collectionVariables.set(\"tournament_id\", openTourney.id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. Detail Turnamen Terpilih",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/tournaments/{{tournament_id}}",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const d = pm.response.json().data;",
+              "    pm.test(\"Atribut turnamen lengkap\", () => {",
+              "        pm.expect(d.title).to.be.a(\"string\");",
+              "        pm.expect(d.max_teams).to.be.above(0);",
+              "        pm.expect(d.game).to.be.an(\"object\");",
+              "    });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09. Detail Turnamen ID Bukan Angka (TC-10 Negative)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/tournaments/turnamen-fiktif-abc",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 404 Not Found\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Detail Turnamen ID Tidak Ada (TC-10 Negative)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/tournaments/999999",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 404 Not Found\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Pagination Melebihi Batas Maksimal (Negative)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/tournaments?per_page=51",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 422 Unprocessable Content\", () => pm.response.to.have.status(422));",
+              "pm.test(\"Validasi per_page maksimal\", () => {",
+              "    const res = pm.response.json();",
+              "    pm.expect(res.errors.per_page).to.exist;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Pendaftaran Tim Kapten1 (TC-03 Happy Path)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"tournament_id\": {{tournament_id}}, \"team_name\": \"{{team_kapten1}}\", \"captain_name\": \"Andi Pratama\", \"captain_whatsapp\": \"081234567890\", \"captain_email\": \"kapten1@turnamen.test\", \"team_members\": \"1. Andi Pratama (Kapten)\\n2. Dimas Kurnia\\n3. Rian Putra\\n4. Fajar Ramadhan\\n5. Gilang Saputra\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 201 Created\", () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) {",
+              "    const d = pm.response.json().data;",
+              "    pm.collectionVariables.set(\"registration_kapten1\", d.id);",
+              "    pm.test(\"Pemilik sesuai Kapten1\", () => pm.expect(String(d.owner.id)).to.eql(String(pm.collectionVariables.get(\"user_kapten1\"))));",
+              "    pm.test(\"Status awal pending\", () => pm.expect(d.status).to.eql(\"pending\"));",
+              "    pm.test(\"Header Location tersedia\", () => pm.expect(pm.response.headers.get(\"Location\")).to.be.a(\"string\"));",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Pendaftaran Tim Kapten2 (TC-03 Happy Path)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten2}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"tournament_id\": {{tournament_id}}, \"team_name\": \"{{team_kapten2}}\", \"captain_name\": \"Budi Santoso\", \"captain_whatsapp\": \"082198765432\", \"captain_email\": \"kapten2@turnamen.test\", \"team_members\": \"1. Budi Santoso (Kapten)\\n2. Eko Saputro\\n3. Doni Alamsyah\\n4. Wahyu Hidayat\\n5. Rizky Pratama\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 201 Created\", () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) {",
+              "    const d = pm.response.json().data;",
+              "    pm.collectionVariables.set(\"registration_kapten2\", d.id);",
+              "    pm.test(\"Pemilik sesuai Kapten2\", () => pm.expect(String(d.owner.id)).to.eql(String(pm.collectionVariables.get(\"user_kapten2\"))));",
+              "    pm.test(\"Status awal pending\", () => pm.expect(d.status).to.eql(\"pending\"));",
+              "    pm.test(\"Header Location tersedia\", () => pm.expect(pm.response.headers.get(\"Location\")).to.be.a(\"string\"));",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14. Daftar Pendaftaran Sendiri (Isolasi Kapten1)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations?per_page=5&page=1",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const res = pm.response.json();",
+              "    pm.test(\"Hanya tim milik Kapten1\", () => {",
+              "        res.data.forEach(r => {",
+              "            pm.expect(String(r.owner.id)).to.eql(String(pm.collectionVariables.get(\"user_kapten1\")));",
+              "        });",
+              "    });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15. Detail Pendaftaran Aman (Tanpa Data Sensitif)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations/{{registration_kapten1}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const scan = x => {",
+              "        if (x && typeof x === \"object\") {",
+              "            Object.entries(x).forEach(([k, v]) => {",
+              "                pm.expect([\"password\", \"remember_token\", \"access_token\"]).not.to.include(k);",
+              "                scan(v);",
+              "            });",
+              "        }",
+              "    };",
+              "    scan(pm.response.json().data);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16. Kapten2 Mengintip Data Kapten1 (TC-09 Negative - 403)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations/{{registration_kapten1}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten2}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 403 Forbidden\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17. Kapten2 Mengubah Data Kapten1 (TC-09 Negative - 403)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations/{{registration_kapten1}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten2}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"team_name\": \"Garuda Dibajak Budi\", \"captain_name\": \"Budi Santoso\", \"captain_whatsapp\": \"08999999999\", \"captain_email\": \"budi@hacked.test\", \"team_members\": \"Member 1, Member 2\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 403 Forbidden\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18. Kapten2 Menghapus Data Kapten1 (TC-09 Negative - 403)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations/{{registration_kapten1}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten2}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 403 Forbidden\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19. Peserta Mengubah Turnamen Admin (TC-09 Negative - 403)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/tournaments/{{tournament_id}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"game_id\": {{game_id}}, \"title\": \"Judul Turnamen Diacak Peserta\", \"description\": \"Deskripsi turnamen telah diubah secara ilegal.\", \"max_teams\": 32, \"registration_fee\": 0, \"registration_deadline\": \"2026-10-20\", \"start_date\": \"2026-10-25\", \"status\": \"open\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 403 Forbidden\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20. Peserta Menghapus Turnamen Admin (TC-09 Negative - 403)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/tournaments/{{tournament_id}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 403 Forbidden\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21. Peserta Menyetujui Status Tim Sendiri (TC-09 Negative - 403)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations/{{registration_kapten1}}/status",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"status\": \"approved\", \"admin_notes\": \"Bypass verifikasi mandiri\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 403 Forbidden\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22. Pendaftaran Nama Tim Kosong (TC-05 Negative)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"tournament_id\": {{tournament_id}}, \"team_name\": \"   \", \"captain_name\": \"Andi Pratama\", \"captain_whatsapp\": \"081234567890\", \"captain_email\": \"kapten1@turnamen.test\", \"team_members\": \"Pemain 1, Pemain 2\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 422 Unprocessable Content\", () => pm.response.to.have.status(422));",
+              "pm.test(\"Validasi team_name ditolak\", () => {",
+              "    const res = pm.response.json();",
+              "    pm.expect(res.errors.team_name).to.exist;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23. Pendaftaran Roster Kosong (TC-05 Negative)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"tournament_id\": {{tournament_id}}, \"team_name\": \"Tim Tanpa Roster\", \"captain_name\": \"Andi Pratama\", \"captain_whatsapp\": \"081234567890\", \"captain_email\": \"kapten1@turnamen.test\", \"team_members\": \"\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 422 Unprocessable Content\", () => pm.response.to.have.status(422));",
+              "pm.test(\"Validasi team_members ditolak\", () => {",
+              "    const res = pm.response.json();",
+              "    pm.expect(res.errors.team_members).to.exist;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "24. Pendaftaran Format WhatsApp Salah (TC-05 Negative)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"tournament_id\": {{tournament_id}}, \"team_name\": \"Tim Nomor Ngawur\", \"captain_name\": \"Andi Pratama\", \"captain_whatsapp\": \"nomor-bukan-angka\", \"captain_email\": \"kapten1@turnamen.test\", \"team_members\": \"1. A 2. B 3. C 4. D 5. E\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 422 Unprocessable Content\", () => pm.response.to.have.status(422));",
+              "pm.test(\"Validasi regex nomor WhatsApp\", () => {",
+              "    const res = pm.response.json();",
+              "    pm.expect(res.errors.captain_whatsapp).to.exist;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "25. Pemalsuan Pemilik Pendaftaran (user_id spoofing)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"tournament_id\": {{tournament_id}}, \"user_id\": {{user_kapten2}}, \"team_name\": \"Tim Palsu Atas Nama Budi\", \"captain_name\": \"Budi Santoso\", \"captain_whatsapp\": \"082198765432\", \"captain_email\": \"budi@turnamen.test\", \"team_members\": \"1. A 2. B 3. C 4. D 5. E\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 422 Unprocessable Content\", () => pm.response.to.have.status(422));",
+              "pm.test(\"Manipulasi user_id terdeteksi dan ditolak\", () => {",
+              "    const res = pm.response.json();",
+              "    pm.expect(res.errors.user_id).to.exist;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "26. Pendaftaran ID Turnamen Tidak Ada (TC-07 Negative)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"tournament_id\": 999999, \"team_name\": \"Tim Antah Berantah\", \"captain_name\": \"Andi Pratama\", \"captain_whatsapp\": \"081234567890\", \"captain_email\": \"kapten1@turnamen.test\", \"team_members\": \"1. A 2. B 3. C 4. D 5. E\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 422 Unprocessable Content\", () => pm.response.to.have.status(422));",
+              "pm.test(\"Foreign key tournament_id ditolak\", () => {",
+              "    const res = pm.response.json();",
+              "    pm.expect(res.errors.tournament_id).to.exist;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "27. Duplikasi Nama Tim pada Turnamen Sama (TC-11 Negative)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten2}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"tournament_id\": {{tournament_id}}, \"team_name\": \"{{team_kapten1}}\", \"captain_name\": \"Kapten Kloning\", \"captain_whatsapp\": \"089988776655\", \"captain_email\": \"kloning@turnamen.test\", \"team_members\": \"1. X 2. Y 3. Z 4. W 5. V\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 422 Unprocessable Content\", () => pm.response.to.have.status(422));",
+              "pm.test(\"Duplikasi team_name ditolak\", () => {",
+              "    const res = pm.response.json();",
+              "    pm.expect(res.errors.team_name).to.exist;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "28. Update Data Tim Sendiri Kapten1 (TC-04 Happy Path)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations/{{registration_kapten1}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"team_name\": \"{{team_kapten1_updated}}\", \"captain_name\": \"Andi Pratama\", \"captain_whatsapp\": \"081299998888\", \"captain_email\": \"kapten1.updated@turnamen.test\", \"team_members\": \"1. Andi 'Garuda' Pratama\\n2. Dimas Kurnia\\n3. Rian Putra\\n4. Fajar Ramadhan\\n5. Gilang Saputra\\n6. Pemain Cadangan\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const d = pm.response.json().data;",
+              "    pm.test(\"Nama tim berhasil diubah\", () => pm.expect(d.team_name).to.eql(pm.collectionVariables.get(\"team_kapten1_updated\")));",
+              "    pm.test(\"Nomor WA berhasil diubah\", () => pm.expect(d.captain_whatsapp).to.eql(\"081299998888\"));",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "29. Admin Menyetujui (Approve) Pendaftaran Kapten1",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations/{{registration_kapten1}}/status",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_admin}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"status\": \"approved\", \"admin_notes\": \"Berkas roster lengkap dan pembayaran biaya pendaftaran telah diverifikasi lunas.\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const d = pm.response.json().data;",
+              "    pm.test(\"Status tim menjadi approved\", () => pm.expect(d.status).to.eql(\"approved\"));",
+              "    pm.test(\"Catatan admin tersimpan\", () => pm.expect(d.admin_notes).to.include(\"lunas\"));",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "30. Status Approved Tidak Bisa Diubah Peserta (Negative)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations/{{registration_kapten1}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"team_name\": \"Garuda Berubah Lagi\", \"captain_name\": \"Andi Pratama\", \"captain_whatsapp\": \"081299998888\", \"captain_email\": \"kapten1@turnamen.test\", \"team_members\": \"Pemain 1, 2, 3, 4, 5\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 403 Forbidden\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "31. Status Approved Tidak Bisa Dihapus Peserta (Negative)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations/{{registration_kapten1}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 403 Forbidden\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "32. Akses Laporan Summary oleh Peserta (TC-09 Negative - 403)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/reports/summary",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 403 Forbidden\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "33. Akses Laporan Summary oleh Admin (Happy Path)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/reports/summary",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_admin}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200 OK\", () => pm.response.to.have.status(200));",
+              "if (pm.response.code === 200) {",
+              "    const d = pm.response.json().data;",
+              "    pm.test(\"Metrik turnamen tersedia\", () => pm.expect(d.tournament_count).to.be.at.least(0));",
+              "    pm.test(\"Metrik pendaftaran tersedia\", () => pm.expect(d.registration_count).to.be.at.least(0));",
+              "    pm.test(\"Metrik game tersedia\", () => pm.expect(d.game_count).to.be.at.least(0));",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "34. Pembatalan Pendaftaran Pending Kapten2 (Happy Path)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations/{{registration_kapten2}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten2}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 204 No Content\", () => pm.response.to.have.status(204));",
+              "pm.test(\"Body kosong\", () => pm.expect(pm.response.text()).to.eql(\"\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "35. Pendaftaran Terhapus Dikonfirmasi 404 (Verifikasi Hapus)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations/{{registration_kapten2}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_admin}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 404 Not Found\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "36. Pembatalan Pendaftaran Approved Kapten1 oleh Admin (Cleanup)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations/{{registration_kapten1}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_admin}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 204 No Content\", () => pm.response.to.have.status(204));",
+              "pm.test(\"Body kosong\", () => pm.expect(pm.response.text()).to.eql(\"\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "37. Pendaftaran Kapten1 Terhapus Dikonfirmasi 404 (Verifikasi Hapus)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/registrations/{{registration_kapten1}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_admin}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 404 Not Found\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "38. Logout Kapten1 (TC-01 Happy Path)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/auth/logout",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 204 No Content\", () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "39. Token Kapten1 Dicabut (TC-01 Verifikasi Logout)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/me",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten1}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 401 Unauthorized\", () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "40. Logout Kapten2 (TC-01 Happy Path)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/auth/logout",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten2}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 204 No Content\", () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "41. Token Kapten2 Dicabut (TC-01 Verifikasi Logout)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/me",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_kapten2}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 401 Unauthorized\", () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "42. Logout Admin (TC-01 Happy Path)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/auth/logout",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_admin}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 204 No Content\", () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "43. Token Admin Dicabut (TC-01 Verifikasi Logout)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/me",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token_admin}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 401 Unauthorized\", () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

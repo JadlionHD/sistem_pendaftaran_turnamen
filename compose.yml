@@ -1,0 +1,24 @@
+name: turnamen_game
+
+services:
+  db:
+    image: docker.io/library/postgres:17-alpine
+    container_name: turnamen_game_db
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-pendaftaran_turnamen}
+      POSTGRES_USER: ${DB_USERNAME:-turnamen_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-turnamen_secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-turnamen_user} -d ${DB_DATABASE:-pendaftaran_turnamen}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    name: turnamen_game_postgres_data
