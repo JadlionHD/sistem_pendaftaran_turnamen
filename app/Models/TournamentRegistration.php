@@ -20,6 +20,14 @@ use Illuminate\Support\Carbon;
  * @property string $team_members
  * @property string $status
  * @property string|null $admin_notes
+ * @property string|null $ai_status
+ * @property int|null $ai_score
+ * @property string|null $ai_summary
+ * @property array<string, mixed>|null $ai_checklist
+ * @property string|null $ai_recommendation
+ * @property string|null $ai_cost
+ * @property int|null $ai_tokens_used
+ * @property Carbon|null $ai_checked_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Tournament $tournament
@@ -43,6 +51,14 @@ class TournamentRegistration extends Model
         'team_members',
         'status',
         'admin_notes',
+        'ai_status',
+        'ai_score',
+        'ai_summary',
+        'ai_checklist',
+        'ai_recommendation',
+        'ai_cost',
+        'ai_tokens_used',
+        'ai_checked_at',
     ];
 
     /**
@@ -53,6 +69,10 @@ class TournamentRegistration extends Model
         return [
             'tournament_id' => 'integer',
             'user_id' => 'integer',
+            'ai_score' => 'integer',
+            'ai_checklist' => 'array',
+            'ai_tokens_used' => 'integer',
+            'ai_checked_at' => 'datetime',
         ];
     }
 

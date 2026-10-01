@@ -4,6 +4,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\Teams\TeamInvitationController;
+use App\Http\Controllers\TournamentAiChatController;
 use App\Http\Controllers\TournamentController;
 use App\Http\Controllers\TournamentRegistrationController;
 use App\Http\Middleware\EnsureTeamMembership;
@@ -38,6 +39,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/registrations/{registration}/edit', [TournamentRegistrationController::class, 'edit'])->name('registrations.edit');
     Route::put('/registrations/{registration}', [TournamentRegistrationController::class, 'update'])->name('registrations.update');
     Route::patch('/registrations/{registration}/status', [TournamentRegistrationController::class, 'updateStatus'])->name('registrations.update-status');
+    Route::post('/registrations/{registration}/audit-ai', [TournamentRegistrationController::class, 'auditAi'])->name('registrations.audit-ai');
     Route::delete('/registrations/{registration}', [TournamentRegistrationController::class, 'destroy'])->name('registrations.destroy');
 
     // 3. Master Data Games
@@ -56,6 +58,19 @@ Route::middleware(['auth'])->group(function () {
 
 // Detail Turnamen publik (ditaruh di bawah agar tidak menabrak /tournaments/create)
 Route::get('/tournaments/{tournament}', [TournamentController::class, 'show'])->name('tournaments.show');
+
+// AI Assistant & Pengecek Turnamen Publik (Live Streaming - Dapat digunakan oleh Guest)
+Route::post('/tournaments/{tournament}/ai-chat-stream', [TournamentAiChatController::class, 'stream'])
+    ->middleware('throttle:30,1')
+    ->name('tournaments.ai-chat-stream');
+
+Route::post('/tournaments/{tournament}/ai-chat-reset', [TournamentAiChatController::class, 'reset'])
+    ->middleware('throttle:30,1')
+    ->name('tournaments.ai-chat-reset');
+
+Route::post('/tournaments/{tournament}/ai-chat-compact', [TournamentAiChatController::class, 'compact'])
+    ->middleware('throttle:30,1')
+    ->name('tournaments.ai-chat-compact');
 
 Route::prefix('{current_team}')
     ->middleware(['auth', 'verified', EnsureTeamMembership::class])

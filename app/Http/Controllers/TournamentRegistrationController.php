@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateRegistrationRequest;
 use App\Models\Tournament;
 use App\Models\TournamentRegistration;
 use App\Models\User;
+use App\Services\TournamentAiAuditorService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -163,6 +164,24 @@ class TournamentRegistrationController extends Controller
         };
 
         return back()->with('success', "Pendaftaran tim {$registration->team_name} berhasil {$statusLabel}.");
+    }
+
+    /**
+     * Audit a tournament registration using AtmoRouter AI (Admin only).
+     */
+    public function auditAi(
+        TournamentRegistration $registration,
+        TournamentAiAuditorService $auditor
+    ): RedirectResponse {
+        Gate::authorize('updateStatus', $registration);
+
+        $result = $auditor->audit($registration);
+
+        if (! $result['success']) {
+            return back()->with('error', $result['message']);
+        }
+
+        return back()->with('success', "Audit AI untuk tim {$registration->team_name} selesai (Skor: {$result['data']['score']}/100 - Status: {$result['data']['status']}).");
     }
 
     /**

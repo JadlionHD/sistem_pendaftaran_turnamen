@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'atmorouter' => [
+        'api_key' => env('ATMOROUTER_API_KEY'),
+        'base_url' => env('ATMOROUTER_BASE_URL', 'https://atmorouter.dev/v1'),
+        'model' => env('ATMOROUTER_MODEL', 'atmo/deepseek-v4.1-flash'),
+        'reasoning_effort' => env('ATMOROUTER_REASONING_EFFORT', 'medium'),
+        'guest_token_limit' => (int) env('ATMOROUTER_GUEST_TOKEN_LIMIT', 3000),
+    ],
+
 ];

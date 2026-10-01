@@ -2,15 +2,22 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
     AlertCircle,
+    AlertTriangle,
+    Bot,
     Check,
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
     Clock,
+    Coins,
+    Cpu,
     Eye,
     Gamepad2,
+    Loader2,
     Pencil,
     Search,
+    ShieldCheck,
+    Sparkles,
     Trash2,
     Users,
     X,
@@ -39,6 +46,12 @@ interface User {
     email: string;
 }
 
+interface ChecklistItem {
+    rule: string;
+    passed: boolean;
+    note: string;
+}
+
 interface Registration {
     id: number;
     tournament_id: number;
@@ -50,6 +63,14 @@ interface Registration {
     team_members: string;
     status: 'pending' | 'approved' | 'rejected';
     admin_notes: string | null;
+    ai_status?: 'passed' | 'flagged' | 'rejected' | null;
+    ai_score?: number | null;
+    ai_summary?: string | null;
+    ai_checklist?: ChecklistItem[] | null;
+    ai_recommendation?: string | null;
+    ai_cost?: string | null;
+    ai_tokens_used?: number | null;
+    ai_checked_at?: string | null;
     created_at: string;
     tournament: Tournament;
     user: User;
@@ -128,6 +149,60 @@ const updateStatus = (registrationId: number, newStatus: 'approved' | 'rejected'
 const deleteRegistration = (reg: Registration) => {
     if (confirm(`Yakin ingin membatalkan pendaftaran tim "${reg.team_name}"?`)) {
         router.delete(`/registrations/${reg.id}`);
+    }
+};
+
+const auditingId = ref<number | null>(null);
+
+const runAiAudit = (reg: Registration) => {
+    auditingId.value = reg.id;
+    router.post(
+        `/registrations/${reg.id}/audit-ai`,
+        {},
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                auditingId.value = null;
+                // Perbarui data modal jika sedang terbuka untuk registrasi ini
+                if (activeModalRegistration.value && activeModalRegistration.value.id === reg.id) {
+                    const fresh = props.registrations.data.find(r => r.id === reg.id);
+                    if (fresh) {
+                        activeModalRegistration.value = fresh;
+                    }
+                }
+            },
+        },
+    );
+};
+
+const getAiBadge = (status?: string | null, score?: number | null) => {
+    if (!status) {
+        return {
+            label: 'AI: Belum Dicek',
+            class: 'bg-muted text-muted-foreground border-border/60 hover:bg-muted/80',
+        };
+    }
+    switch (status) {
+        case 'passed':
+            return {
+                label: `AI: Lolos (${score ?? 100})`,
+                class: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20',
+            };
+        case 'flagged':
+            return {
+                label: `AI: Perlu Cek (${score ?? 50})`,
+                class: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20',
+            };
+        case 'rejected':
+            return {
+                label: `AI: Ditolak (${score ?? 0})`,
+                class: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30 hover:bg-rose-500/20',
+            };
+        default:
+            return {
+                label: 'AI: Memproses',
+                class: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30 hover:bg-sky-500/20',
+            };
     }
 };
 
@@ -270,7 +345,7 @@ defineOptions({
                             <th class="px-4 py-3 font-medium">Tim & Kapten</th>
                             <th class="px-4 py-3 font-medium">Turnamen & Game</th>
                             <th class="px-4 py-3 font-medium">Kontak WhatsApp</th>
-                            <th class="px-4 py-3 font-medium">Status Verifikasi</th>
+                            <th class="px-4 py-3 font-medium">Status & AI Audit</th>
                             <th class="px-4 py-3 font-medium">Waktu Daftar</th>
                             <th class="px-4 py-3 font-medium text-right">Aksi</th>
                         </tr>
@@ -310,19 +385,33 @@ defineOptions({
                                 {{ reg.captain_whatsapp }}
                             </td>
 
-                            <!-- Status -->
+                            <!-- Status & AI Audit -->
                             <td class="px-4 py-3.5">
-                                <span
-                                    :class="[
-                                        'text-xs px-2.5 py-1 rounded-full font-medium border inline-flex items-center gap-1',
-                                        getStatusBadge(reg.status).class,
-                                    ]"
-                                >
-                                    <CheckCircle2 v-if="reg.status === 'approved'" class="size-3" />
-                                    <XCircle v-else-if="reg.status === 'rejected'" class="size-3" />
-                                    <Clock v-else class="size-3" />
-                                    {{ getStatusBadge(reg.status).label }}
-                                </span>
+                                <div class="flex flex-col gap-1.5 items-start">
+                                    <span
+                                        :class="[
+                                            'text-xs px-2.5 py-0.5 rounded-full font-medium border inline-flex items-center gap-1',
+                                            getStatusBadge(reg.status).class,
+                                        ]"
+                                    >
+                                        <CheckCircle2 v-if="reg.status === 'approved'" class="size-3" />
+                                        <XCircle v-else-if="reg.status === 'rejected'" class="size-3" />
+                                        <Clock v-else class="size-3" />
+                                        {{ getStatusBadge(reg.status).label }}
+                                    </span>
+
+                                    <!-- AI Audit Badge -->
+                                    <button
+                                        type="button"
+                                        class="text-[11px] px-2 py-0.5 rounded-md border inline-flex items-center gap-1 cursor-pointer transition-opacity"
+                                        :class="getAiBadge(reg.ai_status, reg.ai_score).class"
+                                        @click="openDetailModal(reg)"
+                                        title="Klik untuk melihat rincian laporan AI"
+                                    >
+                                        <Sparkles class="size-3 text-indigo-500" />
+                                        {{ getAiBadge(reg.ai_status, reg.ai_score).label }}
+                                    </button>
+                                </div>
                                 <div v-if="reg.admin_notes" class="text-[11px] text-muted-foreground mt-1 max-w-xs italic">
                                     "{{ reg.admin_notes }}"
                                 </div>
@@ -336,14 +425,29 @@ defineOptions({
                             <!-- Aksi -->
                             <td class="px-4 py-3.5 text-right whitespace-nowrap">
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <!-- Lihat Anggota -->
+                                    <!-- Tombol Audit AI untuk Admin -->
+                                    <Button
+                                        v-if="isAdmin"
+                                        variant="outline"
+                                        size="sm"
+                                        class="h-8 text-xs text-indigo-600 dark:text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/10 gap-1"
+                                        :disabled="auditingId === reg.id"
+                                        @click="runAiAudit(reg)"
+                                        :title="reg.ai_status ? 'Jalankan Audit AI Ulang' : 'Jalankan Audit AI'"
+                                    >
+                                        <Loader2 v-if="auditingId === reg.id" class="size-3.5 animate-spin" />
+                                        <Bot v-else class="size-3.5" />
+                                        <span class="hidden lg:inline">{{ reg.ai_status ? 'Re-Audit' : 'Audit AI' }}</span>
+                                    </Button>
+
+                                    <!-- Lihat Anggota & Laporan AI -->
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         class="h-8 text-xs gap-1"
                                         @click="openDetailModal(reg)"
                                     >
-                                        <Eye class="size-3.5" /> Detail Roster
+                                        <Eye class="size-3.5" /> Roster & AI
                                     </Button>
 
                                     <!-- Edit untuk Peserta (jika masih pending) -->
@@ -448,60 +552,222 @@ defineOptions({
             </Button>
         </div>
 
-        <!-- Detail Modal Roster Pemain -->
+        <!-- Detail Modal Roster Pemain & Laporan AI -->
         <div
             v-if="activeModalRegistration"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs overflow-y-auto"
         >
-            <div class="bg-card border border-border rounded-2xl p-6 max-w-lg w-full shadow-xl space-y-4">
+            <div class="bg-card border border-border rounded-2xl p-6 max-w-2xl w-full shadow-2xl space-y-5 my-8 max-h-[90vh] overflow-y-auto">
                 <div class="flex items-center justify-between pb-3 border-b border-border">
-                    <div>
-                        <h3 class="font-bold text-lg text-foreground">
-                            {{ activeModalRegistration.team_name }}
-                        </h3>
-                        <p class="text-xs text-muted-foreground">
-                            Turnamen: {{ activeModalRegistration.tournament.title }}
-                        </p>
+                    <div class="flex items-center gap-2.5">
+                        <div class="p-2 rounded-xl bg-primary/10 text-primary">
+                            <Gamepad2 class="size-5" />
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg text-foreground flex items-center gap-2">
+                                {{ activeModalRegistration.team_name }}
+                            </h3>
+                            <p class="text-xs text-muted-foreground">
+                                Turnamen: {{ activeModalRegistration.tournament.title }} ({{ activeModalRegistration.tournament.game.name }})
+                            </p>
+                        </div>
                     </div>
                     <Button variant="ghost" size="icon" @click="closeDetailModal">
                         <X class="size-4" />
                     </Button>
                 </div>
 
-                <div class="space-y-3 text-sm">
-                    <div class="grid grid-cols-2 gap-2 text-xs bg-muted/40 p-3 rounded-lg">
+                <div class="space-y-4 text-sm">
+                    <!-- Data Kapten & Kontak -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-muted/40 p-3 rounded-xl border border-border/50">
                         <div>
-                            <span class="text-muted-foreground block">Kapten:</span>
-                            <span class="font-semibold">{{ activeModalRegistration.captain_name }}</span>
+                            <span class="text-muted-foreground block text-[11px]">Kapten:</span>
+                            <span class="font-semibold text-foreground truncate block">{{ activeModalRegistration.captain_name }}</span>
                         </div>
                         <div>
-                            <span class="text-muted-foreground block">WhatsApp:</span>
-                            <span class="font-mono">{{ activeModalRegistration.captain_whatsapp }}</span>
+                            <span class="text-muted-foreground block text-[11px]">WhatsApp:</span>
+                            <span class="font-mono text-foreground">{{ activeModalRegistration.captain_whatsapp }}</span>
                         </div>
                         <div>
-                            <span class="text-muted-foreground block">Email:</span>
-                            <span>{{ activeModalRegistration.captain_email }}</span>
+                            <span class="text-muted-foreground block text-[11px]">Email:</span>
+                            <span class="truncate block text-foreground">{{ activeModalRegistration.captain_email }}</span>
                         </div>
                         <div>
-                            <span class="text-muted-foreground block">Status:</span>
-                            <span class="capitalize font-semibold">{{ activeModalRegistration.status }}</span>
+                            <span class="text-muted-foreground block text-[11px]">Status Verifikasi:</span>
+                            <span
+                                :class="[
+                                    'text-[10px] px-2 py-0.5 rounded-full font-medium border inline-flex items-center gap-1 mt-0.5',
+                                    getStatusBadge(activeModalRegistration.status).class,
+                                ]"
+                            >
+                                {{ getStatusBadge(activeModalRegistration.status).label }}
+                            </span>
                         </div>
                     </div>
 
-                    <div class="space-y-1">
-                        <label class="text-xs font-semibold text-muted-foreground">Daftar Roster Pemain:</label>
-                        <div class="bg-muted/30 p-3 rounded-lg border border-border whitespace-pre-line font-mono text-xs max-h-48 overflow-y-auto">
+                    <!-- AI AUDIT CARD -->
+                    <div class="rounded-xl border border-indigo-500/20 bg-linear-to-br from-indigo-500/5 via-background to-purple-500/5 p-4 space-y-3.5">
+                        <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-indigo-500/10">
+                            <div class="flex items-center gap-2">
+                                <div class="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                                    <Bot class="size-4" />
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-xs md:text-sm text-foreground flex items-center gap-1.5">
+                                        Audit AI Agent
+                                    </h4>
+                                    <p class="text-[11px] text-muted-foreground">
+                                        Pemeriksaan otomatis data tim, format ID akun game, duplikasi, & etika.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div v-if="activeModalRegistration.ai_status" class="flex items-center gap-2">
+                                <span
+                                    :class="[
+                                        'text-xs px-2.5 py-1 rounded-full font-semibold border inline-flex items-center gap-1.5',
+                                        getAiBadge(activeModalRegistration.ai_status, activeModalRegistration.ai_score).class,
+                                    ]"
+                                >
+                                    <ShieldCheck v-if="activeModalRegistration.ai_status === 'passed'" class="size-3.5" />
+                                    <AlertTriangle v-else-if="activeModalRegistration.ai_status === 'flagged'" class="size-3.5" />
+                                    <XCircle v-else class="size-3.5" />
+                                    Skor: {{ activeModalRegistration.ai_score }}/100
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Jika Sudah Diaudit AI -->
+                        <div v-if="activeModalRegistration.ai_status" class="space-y-3">
+                            <!-- Ringkasan AI -->
+                            <div class="p-3 rounded-lg bg-background/80 border border-border/80 text-xs">
+                                <span class="font-semibold text-foreground block mb-1">Evaluasi AI:</span>
+                                <p class="text-muted-foreground leading-relaxed">
+                                    {{ activeModalRegistration.ai_summary }}
+                                </p>
+                            </div>
+
+                            <!-- Checklist AI -->
+                            <div v-if="activeModalRegistration.ai_checklist && activeModalRegistration.ai_checklist.length" class="space-y-1.5">
+                                <span class="text-xs font-semibold text-foreground block">Poin Verifikasi Regulasi:</span>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <div
+                                        v-for="(item, idx) in activeModalRegistration.ai_checklist"
+                                        :key="idx"
+                                        class="p-2.5 rounded-lg border text-xs flex items-start gap-2 bg-background/60"
+                                        :class="item.passed ? 'border-emerald-500/20' : 'border-rose-500/20'"
+                                    >
+                                        <CheckCircle2 v-if="item.passed" class="size-4 text-emerald-500 shrink-0 mt-0.5" />
+                                        <XCircle v-else class="size-4 text-rose-500 shrink-0 mt-0.5" />
+                                        <div>
+                                            <div class="font-medium text-foreground">{{ item.rule }}</div>
+                                            <div class="text-[11px] text-muted-foreground mt-0.5">{{ item.note }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Rekomendasi AI -->
+                            <div v-if="activeModalRegistration.ai_recommendation" class="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-xs flex items-start gap-2">
+                                <Sparkles class="size-4 text-indigo-500 shrink-0 mt-0.5" />
+                                <div>
+                                    <strong class="text-indigo-700 dark:text-indigo-300">Rekomendasi AI untuk Panitia:</strong>
+                                    <p class="text-indigo-950 dark:text-indigo-200 mt-0.5">
+                                        {{ activeModalRegistration.ai_recommendation }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- AtmoRouter Metrics -->
+                            <div class="flex flex-wrap items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border/50">
+                                <div class="flex items-center gap-3">
+                                    <span v-if="activeModalRegistration.ai_cost" class="inline-flex items-center gap-1 font-mono text-emerald-600 dark:text-emerald-400">
+                                        <Coins class="size-3" /> Biaya: {{ activeModalRegistration.ai_cost }}
+                                    </span>
+                                    <span v-if="activeModalRegistration.ai_tokens_used" class="inline-flex items-center gap-1 font-mono">
+                                        <Cpu class="size-3" /> {{ activeModalRegistration.ai_tokens_used }} tokens
+                                    </span>
+                                </div>
+                                <div v-if="activeModalRegistration.ai_checked_at" class="text-[10px]">
+                                    Diaudit: {{ formatDate(activeModalRegistration.ai_checked_at) }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Jika Belum Diaudit AI -->
+                        <div v-else class="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-lg bg-muted/40 border border-dashed border-border text-center sm:text-left">
+                            <div class="space-y-0.5">
+                                <div class="font-medium text-xs text-foreground">Pendaftaran ini belum diaudit oleh AI.</div>
+                                <div class="text-[11px] text-muted-foreground">
+                                    Jalankan audit untuk mengecek kelayakan roster, format ID akun, dan duplikasi secara otomatis.
+                                </div>
+                            </div>
+
+                            <Button
+                                v-if="isAdmin"
+                                size="sm"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs gap-1.5 shrink-0"
+                                :disabled="auditingId === activeModalRegistration.id"
+                                @click="runAiAudit(activeModalRegistration)"
+                            >
+                                <Loader2 v-if="auditingId === activeModalRegistration.id" class="size-3.5 animate-spin" />
+                                <Sparkles v-else class="size-3.5" />
+                                Jalankan Audit AI
+                            </Button>
+                        </div>
+                    </div>
+
+                    <!-- Roster Pemain Asli -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-semibold text-muted-foreground">Daftar Roster Pemain (Input Pendaftar):</label>
+                        <div class="bg-muted/30 p-3 rounded-xl border border-border whitespace-pre-line font-mono text-xs max-h-40 overflow-y-auto leading-relaxed">
                             {{ activeModalRegistration.team_members }}
                         </div>
                     </div>
 
-                    <div v-if="activeModalRegistration.admin_notes" class="p-3 bg-amber-500/10 rounded-lg text-xs text-amber-700 dark:text-amber-400">
+                    <!-- Catatan Panitia -->
+                    <div v-if="activeModalRegistration.admin_notes" class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-700 dark:text-amber-400">
                         <strong>Catatan Panitia:</strong> {{ activeModalRegistration.admin_notes }}
                     </div>
                 </div>
 
-                <div class="flex justify-end pt-3 border-t border-border">
-                    <Button variant="outline" size="sm" @click="closeDetailModal">
+                <!-- Footer Modal -->
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border">
+                    <div v-if="isAdmin" class="flex items-center gap-1.5">
+                        <Button
+                            v-if="activeModalRegistration.status !== 'approved'"
+                            size="sm"
+                            class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1"
+                            @click="updateStatus(activeModalRegistration.id, 'approved'); closeDetailModal();"
+                        >
+                            <Check class="size-3.5" /> Setujui Tim
+                        </Button>
+
+                        <Button
+                            v-if="activeModalRegistration.status !== 'rejected'"
+                            size="sm"
+                            variant="destructive"
+                            class="text-xs gap-1"
+                            @click="updateStatus(activeModalRegistration.id, 'rejected'); closeDetailModal();"
+                        >
+                            <X class="size-3.5" /> Tolak Tim
+                        </Button>
+
+                        <Button
+                            v-if="activeModalRegistration.ai_status"
+                            variant="outline"
+                            size="sm"
+                            class="text-xs text-indigo-600 dark:text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/10 gap-1"
+                            :disabled="auditingId === activeModalRegistration.id"
+                            @click="runAiAudit(activeModalRegistration)"
+                        >
+                            <Loader2 v-if="auditingId === activeModalRegistration.id" class="size-3.5 animate-spin" />
+                            <Bot v-else class="size-3.5" />
+                            Re-Audit AI
+                        </Button>
+                    </div>
+
+                    <Button variant="outline" size="sm" @click="closeDetailModal" class="ml-auto">
                         Tutup
                     </Button>
                 </div>
