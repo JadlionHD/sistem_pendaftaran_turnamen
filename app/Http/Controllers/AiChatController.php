@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Game;
 use App\Models\Tournament;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -10,18 +11,17 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-class TournamentAiChatController extends Controller
+class AiChatController extends Controller
 {
     /**
-     * Stream AI responses for tournament queries and roster eligibility checks (Available for Guests).
+     * Stream universal AI responses for general esports inquiries, tournaments, and roster eligibility (Available for Guests).
      */
-    public function stream(
-        Request $request,
-        Tournament $tournament,
-    ): StreamedResponse {
+    public function stream(Request $request): StreamedResponse
+    {
         $validated = $request->validate([
             'message' => ['required', 'string', 'max:1500'],
-            'history' => ['nullable', 'array', 'max:8'],
+            'tournament_id' => ['nullable', 'integer', 'exists:tournaments,id'],
+            'history' => ['nullable', 'array', 'max:10'],
             'history.*.role' => [
                 'required_with:history',
                 'string',
@@ -35,20 +35,14 @@ class TournamentAiChatController extends Controller
             'compact_context' => ['nullable', 'string', 'max:1500'],
         ]);
 
-        $guestKey =
-            'ai_chat_guest_tokens_'.
-            md5((string) $request->ip().'_'.$tournament->id);
+        $guestKey = 'ai_chat_universal_tokens_'.md5((string) $request->ip());
         $currentTokens = (int) Cache::get($guestKey, 0);
-        $tokenLimit = (int) config(
-            'services.atmorouter.guest_token_limit',
-            3000,
-        );
+        $tokenLimit = (int) config('services.atmorouter.guest_token_limit', 3000);
 
         if ($currentTokens >= $tokenLimit) {
             return response()->stream(
                 function (): void {
-                    $warning =
-                        'Kamu telah melewati batas chat dengan AI nya, harap melakukan Reset percakapan untuk memulai sesi baru atau gunakan fitur Compact agar AI tetap mengingat percakapan sebelumnya.';
+                    $warning = 'Kamu telah melewati batas chat dengan AI nya, harap melakukan Reset percakapan untuk memulai sesi baru atau gunakan fitur Compact agar AI tetap mengingat percakapan sebelumnya.';
                     $payload = json_encode([
                         'token_limit_reached' => true,
                         'choices' => [
@@ -90,44 +84,86 @@ class TournamentAiChatController extends Controller
             'medium',
         );
 
-        $tournament->loadMissing('game');
-        $gameName = $tournament->game->name ?? 'Esports';
-        $rules = $tournament->rules ?: 'Standar fair play esports.';
-        $deadline = $tournament->registration_deadline->format('d M Y');
-        $start = $tournament->start_date->format('d M Y');
-        $fee =
-            $tournament->registration_fee === 0
-                ? 'Gratis'
-                : 'Rp '.
-                    number_format($tournament->registration_fee, 0, ',', '.');
-        $prize = $tournament->prize_pool ?: 'Belum ditentukan';
-        $slots = "{$tournament->approvedRegistrations()->count()} / {$tournament->max_teams} tim terdaftar";
+        // Fetch platform context: supported games and tournaments
+        $games = Game::where('is_active', true)->get();
+        $gamesSummary = $games->map(function (Game $g): string {
+            return "- {$g->name} (Format {$g->team_size} pemain/tim, Genre: {$g->genre}, Platform: {$g->platform})";
+        })->implode("\n");
+
+        $tournaments = Tournament::with(['game'])
+            ->withCount(['registrations as approved_teams_count' => function ($q) {
+                $q->where('status', 'approved');
+            }])
+            ->latest('id')
+            ->take(12)
+            ->get();
+
+        $tournamentsSummary = $tournaments->map(function (Tournament $t): string {
+            $fee = $t->registration_fee === 0 ? 'Gratis' : 'Rp '.number_format($t->registration_fee, 0, ',', '.');
+            $prize = $t->prize_pool ?: 'Piala & Sertifikat';
+            $deadline = $t->registration_deadline->format('d M Y');
+            $start = $t->start_date->format('d M Y');
+            $game = $t->game ? $t->game->name : 'Esports';
+            $status = strtoupper($t->status);
+            $slots = "{$t->approved_teams_count}/{$t->max_teams} tim";
+            $rulesPreview = $t->rules ? Str::limit(str_replace(["\r", "\n"], ' ', $t->rules), 120) : 'Aturan standar berlaku';
+
+            return "- [ID: {$t->id}] \"{$t->title}\" | Game: {$game} | Status: {$status} | Biaya: {$fee} | Hadiah: {$prize} | Slot: {$slots} | Batas Daftar: {$deadline} | Mulai: {$start} | Aturan: {$rulesPreview}";
+        })->implode("\n");
+
+        // Specific tournament context if user is currently looking at one
+        $currentContext = '';
+        if (! empty($validated['tournament_id'])) {
+            $currentTournament = Tournament::with(['game'])->find($validated['tournament_id']);
+            if ($currentTournament) {
+                $cGame = $currentTournament->game ? $currentTournament->game->name : 'Esports';
+                $cFee = $currentTournament->registration_fee === 0 ? 'Gratis' : 'Rp '.number_format($currentTournament->registration_fee, 0, ',', '.');
+                $cPrize = $currentTournament->prize_pool ?: 'Piala & Sertifikat';
+                $cRules = $currentTournament->rules ?: 'Standar fair play esports.';
+                $cDeadline = $currentTournament->registration_deadline->format('d M Y');
+                $cStart = $currentTournament->start_date->format('d M Y');
+                $currentContext = <<<CONTEXT
+KONTEKS HALAMAN SAAT INI:
+Pengguna sedang membuka halaman turnamen:
+- Judul: "{$currentTournament->title}" (ID: {$currentTournament->id})
+- Game: {$cGame}
+- Biaya Pendaftaran: {$cFee}
+- Total Hadiah: {$cPrize}
+- Batas Pendaftaran: {$cDeadline}
+- Tanggal Mulai: {$cStart}
+- Deskripsi: {$currentTournament->description}
+- Regulasi Lengkap:
+{$cRules}
+Jika pengguna menanyakan "turnamen ini", jawab dengan merujuk pada turnamen tersebut.
+CONTEXT;
+            }
+        }
 
         $systemPrompt = <<<PROMPT
-        Kamu adalah AI Agent Resmi untuk turnamen esports: "{$tournament->title}".
-        Game: {$gameName}
-        Deskripsi Turnamen: {$tournament->description}
-        Aturan Khusus Turnamen:
-        {$rules}
-        Biaya Pendaftaran: {$fee}
-        Total Hadiah: {$prize}
-        Batas Akhir Pendaftaran: {$deadline}
-        Tanggal Mulai Pertandingan: {$start}
-        Status Slot: {$slots}
+Kamu adalah AI Assistant Resmi Universal untuk Platform "Sistem Pendaftaran Turnamen Game".
+Kamu bertugas membantu pengunjung umum (guest), calon peserta, dan pemain dalam ekosistem turnamen esports di platform ini.
 
-        TUGAS UTAMA:
-        1. Membantu pengunjung/guest menjawab pertanyaan seputar turnamen, aturan, jadwal, dan hadiah.
-        2. Melakukan evaluasi/pengecekan kelayakan tim (Roster Pre-Check) jika pengunjung memberikan data tim atau nama pemain mereka. Analisis apakah format ID akun game, jumlah anggota, dan role sesuai dengan regulasi game {$gameName}.
-        3. Menjelaskan langkah-langkah pendaftaran jika ditanya.
+INFORMASI GAME YANG DIDUKUNG:
+{$gamesSummary}
 
-        PANDUAN BERPIKIR & MENJAWAB:
-        - Lakukan proses thinking dan penalaran analitis yang teliti sebelum menyusun jawaban.
-        - Telaah setiap poin aturan turnamen, batasan slot, dan kriteria roster game {$gameName}.
-        - Berikan respon yang ramah, jelas, antusias, dan profesional dalam Bahasa Indonesia.
-        - Gunakan format markdown (bullet points, bold) agar mudah dibaca.
-        - Jawab secara langsung dan to-the-point tanpa bertele-tele.
-        - JANGAN MENJAWAB APAPUN DILUAR DARI KONTEKS TURNAMEN GAME, APAPUN ITU ALASANNYA MAU ITU BENCANA ALAM, DAN LAIN SEBAGAINYA. INTINYA DILUAR DARI KONTEKS AWAL.
-        PROMPT;
+DAFTAR TURNAMEN TERBARU & AKTIF DI PLATFORM:
+{$tournamentsSummary}
+
+{$currentContext}
+
+TUGAS UTAMA:
+1. Menjawab pertanyaan universal seputar turnamen apa saja yang tersedia, jadwal, status pendaftaran, prize pool, dan biaya registrasi.
+2. Membantu pengguna melakukan evaluasi kelayakan roster tim (Roster Pre-Check). Jika pengguna mencantumkan nama pemain/tim/ID game, periksa kesesuaian format ID, jumlah pemain inti/cadangan, dan aturan main sesuai game yang dimaksud.
+3. Menjelaskan alur pendaftaran turnamen: pilih turnamen di katalog -> klik "Daftarkan Tim" -> isi nama tim, kontak kapten (WhatsApp & Email), dan daftar anggota tim -> kirim pendaftaran untuk diverifikasi admin.
+4. Menjelaskan regulasi atau aturan turnamen secara rinci jika ditanyakan.
+
+PANDUAN BERPIKIR & MENJAWAB:
+- Lakukan proses reasoning / thinking analitis yang teliti sebelum menyusun jawaban.
+- Berikan respon yang ramah, sopan, antusias, terstruktur, dan profesional dalam Bahasa Indonesia.
+- Gunakan format markdown (bullet points, bold, headings) agar mudah dan nyaman dibaca.
+- Jawab secara to-the-point dan relevan.
+- JANGAN MENJAWAB HAL DI LUAR KONTEKS GAME, ESPORTS, DAN SISTEM TURNAMEN INI.
+PROMPT;
 
         if (! empty($validated['compact_context'])) {
             $systemPrompt .= "\n\nMEMORI KONTEKS PERCAKAPAN SEBELUMNYA:\n{$validated['compact_context']}\nHarap ingat dan gunakan informasi di atas saat menjawab pengguna.";
@@ -157,9 +193,7 @@ class TournamentAiChatController extends Controller
             'max_tokens' => 2500,
         ];
 
-        $estimatedTurn = (int) ceil(
-            (mb_strlen($validated['message']) + 500) * 0.7,
-        );
+        $estimatedTurn = (int) ceil((mb_strlen($validated['message']) + 500) * 0.7);
         Cache::put(
             $guestKey,
             $currentTokens + $estimatedTurn,
@@ -244,9 +278,7 @@ class TournamentAiChatController extends Controller
                 curl_exec($ch);
 
                 if (curl_errno($ch)) {
-                    $errText =
-                        'Terjadi gangguan koneksi ke layanan AI: '.
-                        curl_error($ch);
+                    $errText = 'Terjadi gangguan koneksi ke layanan AI: '.curl_error($ch);
                     $errPayload = json_encode([
                         'choices' => [
                             [
@@ -277,15 +309,11 @@ class TournamentAiChatController extends Controller
     }
 
     /**
-     * Reset guest chat session and token counter.
+     * Reset guest universal chat session and token counter.
      */
-    public function reset(
-        Request $request,
-        Tournament $tournament,
-    ): JsonResponse {
-        $guestKey =
-            'ai_chat_guest_tokens_'.
-            md5((string) $request->ip().'_'.$tournament->id);
+    public function reset(Request $request): JsonResponse
+    {
+        $guestKey = 'ai_chat_universal_tokens_'.md5((string) $request->ip());
         Cache::forget($guestKey);
 
         return response()->json([
@@ -297,10 +325,8 @@ class TournamentAiChatController extends Controller
     /**
      * Compact conversation history into a concise context summary to save tokens.
      */
-    public function compact(
-        Request $request,
-        Tournament $tournament,
-    ): JsonResponse {
+    public function compact(Request $request): JsonResponse
+    {
         $validated = $request->validate([
             'history' => ['required', 'array', 'min:1', 'max:20'],
             'history.*.role' => ['required', 'string', 'in:user,assistant'],
@@ -341,7 +367,7 @@ class TournamentAiChatController extends Controller
                         'messages' => [
                             [
                                 'role' => 'system',
-                                'content' => 'Kamu adalah asisten perangkum memori percakapan turnamen. Tugasmu adalah meringkas percakapan sebelumnya menjadi ringkasan padat dan informatif (maksimal 3-4 kalimat). Cantumkan nama tim, susunan pemain/ID yang telah diperiksa, dan aturan turnamen yang sempat dibahas, agar konteks ini bisa diingat pada percakapan berikutnya. Jawab langsung dengan ringkasan tanpa pembuka atau penutup.',
+                                'content' => 'Kamu adalah asisten perangkum memori percakapan asisten turnamen. Tugasmu adalah meringkas percakapan sebelumnya menjadi ringkasan padat dan informatif (maksimal 3-4 kalimat). Cantumkan judul turnamen yang dibahas, susunan tim/roster/ID jika ada, serta pertanyaan penting agar konteks ini bisa diingat pada percakapan berikutnya. Jawab langsung dengan ringkasan tanpa pembuka atau penutup.',
                             ],
                             [
                                 'role' => 'user',
@@ -368,13 +394,11 @@ class TournamentAiChatController extends Controller
                 ->pluck('content')
                 ->map(fn (string $c): string => Str::limit($c, 60))
                 ->implode('; ');
-            $compacted = "Membahas turnamen {$tournament->title}: {$userQuestions}";
+            $compacted = "Membahas sistem turnamen & pertanyaan: {$userQuestions}";
         }
 
         // Reset guest token usage counter when compaction is performed
-        $guestKey =
-            'ai_chat_guest_tokens_'.
-            md5((string) $request->ip().'_'.$tournament->id);
+        $guestKey = 'ai_chat_universal_tokens_'.md5((string) $request->ip());
         Cache::forget($guestKey);
 
         return response()->json([

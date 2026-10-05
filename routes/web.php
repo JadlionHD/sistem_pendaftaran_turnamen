@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\SessionController;
@@ -59,7 +60,20 @@ Route::middleware(['auth'])->group(function () {
 // Detail Turnamen publik (ditaruh di bawah agar tidak menabrak /tournaments/create)
 Route::get('/tournaments/{tournament}', [TournamentController::class, 'show'])->name('tournaments.show');
 
-// AI Assistant & Pengecek Turnamen Publik (Live Streaming - Dapat digunakan oleh Guest)
+// AI Assistant Universal (Live Streaming - Dapat digunakan oleh Guest & Authenticated)
+Route::post('/ai-chat/stream', [AiChatController::class, 'stream'])
+    ->middleware('throttle:30,1')
+    ->name('ai-chat.stream');
+
+Route::post('/ai-chat/reset', [AiChatController::class, 'reset'])
+    ->middleware('throttle:30,1')
+    ->name('ai-chat.reset');
+
+Route::post('/ai-chat/compact', [AiChatController::class, 'compact'])
+    ->middleware('throttle:30,1')
+    ->name('ai-chat.compact');
+
+// AI Assistant & Pengecek Turnamen Spesifik (Backwards Compatibility)
 Route::post('/tournaments/{tournament}/ai-chat-stream', [TournamentAiChatController::class, 'stream'])
     ->middleware('throttle:30,1')
     ->name('tournaments.ai-chat-stream');

@@ -16,28 +16,28 @@ beforeEach(function () {
     ]);
 
     $this->game = Game::factory()->create([
-        'name' => 'Valorant',
-        'slug' => 'valorant',
-        'genre' => 'Tactical FPS',
+        'name' => 'Mobile Legends',
+        'slug' => 'mobile-legends',
+        'genre' => 'MOBA',
         'team_size' => 5,
-        'platform' => 'PC',
+        'platform' => 'Mobile',
         'is_active' => true,
     ]);
 
     $this->tournament = Tournament::factory()->create([
         'game_id' => $this->game->id,
         'organizer_id' => $this->admin->id,
-        'title' => 'Valorant Champions Cup',
-        'rules' => 'Format 5v5 single elimination. No toxic behavior.',
+        'title' => 'MLBB Garuda Championship',
+        'rules' => 'Format 5v5 draft pick. Dilarang menggunakan cheat/skin script.',
         'status' => 'open',
     ]);
 });
 
-test('tamu (guest) dapat mengakses endpoint streaming ai tanpa harus login', function () {
+test('tamu (guest) dapat mengakses endpoint universal ai streaming tanpa login', function () {
     Config::set('services.atmorouter.api_key', '');
 
-    $response = $this->post(route('tournaments.ai-chat-stream', $this->tournament->id), [
-        'message' => 'Apa saja aturan turnamen ini?',
+    $response = $this->post(route('ai-chat.stream'), [
+        'message' => 'Turnamen apa saja yang tersedia di platform?',
     ]);
 
     $response->assertOk();
@@ -48,8 +48,8 @@ test('tamu (guest) dapat mengakses endpoint streaming ai tanpa harus login', fun
         ->and($content)->toContain('data: [DONE]');
 });
 
-test('endpoint streaming ai memvalidasi keberadaan pesan', function () {
-    $response = $this->postJson(route('tournaments.ai-chat-stream', $this->tournament->id), [
+test('endpoint universal streaming memvalidasi pesan wajib diisi', function () {
+    $response = $this->postJson(route('ai-chat.stream'), [
         'message' => '',
     ]);
 
@@ -57,13 +57,26 @@ test('endpoint streaming ai memvalidasi keberadaan pesan', function () {
     $response->assertJsonValidationErrors('message');
 });
 
-test('guest menerima pesan peringatan dan token_limit_reached ketika kuota token habis', function () {
+test('endpoint universal streaming menerima tournament_id opsional jika relevan', function () {
+    Config::set('services.atmorouter.api_key', '');
+
+    $response = $this->post(route('ai-chat.stream'), [
+        'message' => 'Apakah kuota masih ada untuk turnamen ini?',
+        'tournament_id' => $this->tournament->id,
+    ]);
+
+    $response->assertOk();
+    $content = $response->streamedContent();
+    expect($content)->toContain('API Key AtmoRouter belum dikonfigurasi');
+});
+
+test('guest universal chat menerima pesan peringatan jika kuota token habis', function () {
     Config::set('services.atmorouter.guest_token_limit', 3000);
-    $guestKey = 'ai_chat_guest_tokens_'.md5('127.0.0.1_'.$this->tournament->id);
+    $guestKey = 'ai_chat_universal_tokens_'.md5('127.0.0.1');
     Cache::put($guestKey, 3500, now()->addHours(1));
 
-    $response = $this->post(route('tournaments.ai-chat-stream', $this->tournament->id), [
-        'message' => 'Tolong jelaskan hadiah turnamen',
+    $response = $this->post(route('ai-chat.stream'), [
+        'message' => 'Jelaskan jadwal turnamen',
     ]);
 
     $response->assertOk();
@@ -74,11 +87,12 @@ test('guest menerima pesan peringatan dan token_limit_reached ketika kuota token
         ->and($content)->toContain('data: [DONE]');
 });
 
-test('guest dapat mereset kuota chat ai melalui endpoint reset', function () {
-    $guestKey = 'ai_chat_guest_tokens_'.md5('127.0.0.1_'.$this->tournament->id);
+test('guest dapat mereset kuota universal chat melalui endpoint reset', function () {
+    Config::set('services.atmorouter.guest_token_limit', 3000);
+    $guestKey = 'ai_chat_universal_tokens_'.md5('127.0.0.1');
     Cache::put($guestKey, 3500, now()->addHours(1));
 
-    $response = $this->postJson(route('tournaments.ai-chat-reset', $this->tournament->id));
+    $response = $this->postJson(route('ai-chat.reset'));
 
     $response->assertOk();
     $response->assertJson(['success' => true]);
@@ -86,45 +100,45 @@ test('guest dapat mereset kuota chat ai melalui endpoint reset', function () {
     expect(Cache::get($guestKey, 0))->toBe(0);
 });
 
-test('guest dapat meringkas percakapan melalui endpoint compact untuk mengingat konteks', function () {
+test('guest dapat meringkas riwayat percakapan universal melalui endpoint compact', function () {
     Http::fake([
         'https://atmorouter.dev/v1/chat/completions' => Http::response([
-            'id' => 'chatcmpl-compact-123',
+            'id' => 'chatcmpl-compact-universal',
             'object' => 'chat.completion',
             'choices' => [
                 [
                     'index' => 0,
                     'message' => [
                         'role' => 'assistant',
-                        'content' => 'Roster Phoenix Esports telah diverifikasi memenuhi syarat format 5v5 Valorant.',
+                        'content' => 'Pengguna bertanya tentang pendaftaran turnamen MLBB Garuda Championship dan format 5 pemain.',
                     ],
                     'finish_reason' => 'stop',
                 ],
             ],
             'usage' => [
-                'total_tokens' => 50,
+                'total_tokens' => 45,
             ],
         ], 200),
     ]);
 
     Config::set('services.atmorouter.api_key', 'ar-test-key');
+    Config::set('services.atmorouter.guest_token_limit', 3000);
 
-    $guestKey = 'ai_chat_guest_tokens_'.md5('127.0.0.1_'.$this->tournament->id);
+    $guestKey = 'ai_chat_universal_tokens_'.md5('127.0.0.1');
     Cache::put($guestKey, 3500, now()->addHours(1));
 
-    $response = $this->postJson(route('tournaments.ai-chat-compact', $this->tournament->id), [
+    $response = $this->postJson(route('ai-chat.compact'), [
         'history' => [
-            ['role' => 'user', 'content' => 'Tolong cek roster tim saya Phoenix Esports'],
-            ['role' => 'assistant', 'content' => 'Format roster sudah sesuai 5 pemain.'],
+            ['role' => 'user', 'content' => 'Bagaimana cara daftar turnamen MLBB?'],
+            ['role' => 'assistant', 'content' => 'Pilih turnamen lalu klik Daftarkan Tim.'],
         ],
     ]);
 
     $response->assertOk();
     $response->assertJson([
         'success' => true,
-        'compacted_context' => 'Roster Phoenix Esports telah diverifikasi memenuhi syarat format 5v5 Valorant.',
+        'compacted_context' => 'Pengguna bertanya tentang pendaftaran turnamen MLBB Garuda Championship dan format 5 pemain.',
     ]);
 
-    // Memastikan token counter ter-reset setelah compact
     expect(Cache::get($guestKey, 0))->toBe(0);
 });
